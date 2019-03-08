@@ -1,0 +1,11 @@
+{
+    "python.formatting.provider": "autopep8",
+    "python.linting.pylintEnabled": true,
+    "python.linting.pep8Enabled": true,
+    "python.linting.enabled": true,
+    "editor.formatOnSave": true,
+    "editor.rulers": [
+        80,
+        120
+    ]
+}
