@@ -66,7 +66,7 @@ def parallel_preprocess_func(d):
         if not email_body:
             row = None
         else:
-            row['tokens'] = ' '.join(tokenize_text(email_body))
+            row['tokens'] = tokenize_text(email_body)
     except Exception:
         tqdm.write('Exception at {}'.format(row['email_path']))
         logging.exception('message')
