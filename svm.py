@@ -1,82 +1,67 @@
-from sklearn.svm import SVC
+from sklearn.svm import SVC, LinearSVC
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from classifier_switcher import ClfSwitcher
+from grid_helper import score_summary
 import numpy as np
 import pandas as pd
 
 dataset_path = 'trec07p/processed-emails.csv'
+score_file = 'scores.csv'
 
 param_grid = [
-    {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
-    {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel':['rbf']}
+    {
+        'clf__estimator': [SVC()],
+        'clf__estimator__C': [1, 10, 100, 1000],
+        'clf__estimator__kernel': ['rbf'],
+        'clf__estimator__gamma': [1e-3, 1e-4, 'scale']
+    },
+    {
+        'clf__estimator': [LinearSVC()],
+        'clf__estimator__C': [1, 10, 100, 1000]
+    },
+    {
+        'clf__estimator': [SVC()],
+        'clf__estimator__C': [1, 10, 100, 1000],
+        'clf__estimator__kernel': ['poly'],
+        'clf__estimator__degree': [2, 3, 4],
+        'clf__estimator__gamma': [1e-3, 1e-4, 'scale']
+    }
 ]
-
-scores = ['precision', 'recall']
-
-
-def train_models(x_train, y_train):
-    models = {}
-    for score in scores:
-        print('Tuning hyper-parameters for {}'.format(score))
-        # clf = GridSearchCV(SVC(), param_grid, cv=3,
-        #                    scoring='{}_macro'.format(score))
-
-        clf = Pipeline([
-            ('countvec', CountVectorizer()),
-            ('tfidf', TfidfTransformer()),
-            ('clf', GridSearchCV(SVC(), param_grid,
-                                 cv=3, scoring='{}_macro'.format(score)))
-        ])
-
-        clf.fit(x_train, y_train)
-        models[score] = clf
-
-    return models
-    # svm_model = Pipeline([
-    #     ('countvect', CountVectorizer()),
-    #     ('tfidf', TfidfTransformer()),
-    #     ('clf', SVC(C=1, kernel='linear', gamma=1))
-    # ])
-
-    # svm_model.fit(x_train, y_train)
-
-    # return svm_model
-
-
-def eval_models(models, x_test, y_test):
-    for score in scores:
-        print('Best parameter set found:')
-        print(models[score].best_params_)
-        print('Grid scores:')
-        means = models[score].cv_results_['mean_test_score']
-        stds = models[score].cv_results_['std_test_score']
-        for mean, std, params in zip(means, stds, models[score].cv_results_['params']):
-            print('{:.3f} (+/-{:.4f}) for {}', format(mean, std*2, params))
-
-        print('Detailed classification report:')
-        prediction = models[score].predict(x_test)
-        print(classification_report(y_test, prediction))
-
-    # print(model_name)
-    # prediction = model.predict(x_test)
-    # print('Accuracy: {:.05%}'.format(np.mean(prediction == y_test)))
-    # print(classification_report(y_test, prediction))
-
 
 if __name__ == "__main__":
     df = pd.read_csv(dataset_path, header=0,
                      usecols=['is_spam', 'tokens'])
     df.dropna(how='any', subset=['tokens'], inplace=True)
+
+    df = df.head(500)
+
     print('--- Data Loaded ---')
+
+    print('{0} in total. {1} as spam and {2} as ham'.format(
+        df.shape[0], len(df[df['is_spam'] == 1]), len(df[df['is_spam'] == 0])))
 
     x_train, x_test, y_train, y_test = train_test_split(
         df['tokens'], df['is_spam'], test_size=0.2, random_state=191)
 
-    print('--- Training Starting ---')
-    email_classifier = train_models(x_train, y_train)
-    print('--- Training Finished ---')
+    pipe = Pipeline([
+        ('countvect', CountVectorizer()),
+        ('tfidf', TfidfTransformer()),
+        ('clf', ClfSwitcher())
+    ])
 
-    eval_models(email_classifier, x_test, y_test)
+    grid = GridSearchCV(pipe, param_grid, cv=5, return_train_score=True)
+
+    grid.fit(x_train, y_train)
+
+    print('The best parameters are: ')
+    print(grid.best_params_)
+
+    scores = score_summary(grid)
+
+    scores.to_csv(score_file)
+
+    print(scores)
