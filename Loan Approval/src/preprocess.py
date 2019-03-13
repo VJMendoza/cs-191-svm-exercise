@@ -3,6 +3,7 @@ from datetime import datetime
 from tqdm import tqdm
 from pathlib import Path
 from imputer import DataFrameImputer
+from sklearn.preprocessing import MinMaxScaler
 import logging
 import multiprocessing
 import numpy as np
@@ -32,6 +33,7 @@ def cat_encode(dataset, cols):
     for col in cols:
         dataset[col] = dataset[col].astype('category')
         dataset[col] = dataset[col].cat.codes
+        dataset[col] = dataset[col].astype('int64')
     return dataset
 
 
@@ -43,6 +45,9 @@ def preprocess(dataset):
     dataset = cat_encode(dataset, ['Gender', 'Married', 'Education',
                                    'Self_Employed', 'Credit_History',
                                    'Property_Area', 'Loan_Status'])
+    scaler = MinMaxScaler()
+    dataset[['Applicant_Income', 'Coapplicant_Income', 'Loan_Amount', 'Loan_Amount_Term']] = scaler.fit_transform(
+        dataset[['Applicant_Income', 'Coapplicant_Income', 'Loan_Amount', 'Loan_Amount_Term']])
     return dataset
 
 
