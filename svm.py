@@ -10,7 +10,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC, LinearSVC
 
 
-dataset_size = 100
+dataset_size = 10000
 dataset_path = 'trec07p/processed-emails.csv'
 score_file = 'scores-{}.csv'.format(dataset_size)
 
@@ -69,9 +69,8 @@ if __name__ == "__main__":
 
     print(scores)
 
-    print("Detailed classification report:")
-    print("The model is trained on the full development set.")
-    print("The scores are computed on the full evaluation set.")
+    print("Detailed classification report using the best estimator:")
 
     prediction = grid.predict(x_test)
+    print('Accuracy: {:.05%}'.format(np.mean(prediction == y_test)))
     print(classification_report(y_test, prediction))
