@@ -122,3 +122,5 @@ dmypy.json
 !.vscode/extensions.json
 
 trec07p/
+
+scores-*.csv
