@@ -1,16 +1,18 @@
-from sklearn.svm import SVC, LinearSVC
-from sklearn.pipeline import Pipeline
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import classification_report
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from classifier_switcher import ClfSwitcher
-from grid_helper import score_summary
-import numpy as np
 import pandas as pd
+import numpy as np
+from grid_helper import score_summary
+from classifier_switcher import ClfSwitcher
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC, LinearSVC
 
+
+dataset_size = 100
 dataset_path = 'trec07p/processed-emails.csv'
-score_file = 'scores.csv'
+score_file = 'scores-{}.csv'.format(dataset_size)
 
 param_grid = [
     {
@@ -37,7 +39,7 @@ if __name__ == "__main__":
                      usecols=['is_spam', 'tokens'])
     df.dropna(how='any', subset=['tokens'], inplace=True)
 
-    df = df.head(500)
+    df = df.head(dataset_size)
 
     print('--- Data Loaded ---')
 
@@ -53,11 +55,12 @@ if __name__ == "__main__":
         ('clf', ClfSwitcher())
     ])
 
-    grid = GridSearchCV(pipe, param_grid, cv=5, return_train_score=True)
+    grid = GridSearchCV(pipe, param_grid, cv=5,
+                        return_train_score=True, n_jobs=-1)
 
     grid.fit(x_train, y_train)
 
-    print('The best parameters are: ')
+    print('--- Best Parameter ---')
     print(grid.best_params_)
 
     scores = score_summary(grid)
@@ -65,3 +68,10 @@ if __name__ == "__main__":
     scores.to_csv(score_file)
 
     print(scores)
+
+    print("Detailed classification report:")
+    print("The model is trained on the full development set.")
+    print("The scores are computed on the full evaluation set.")
+
+    prediction = grid.predict(x_test)
+    print(classification_report(y_test, prediction))
