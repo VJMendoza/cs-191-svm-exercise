@@ -25,7 +25,7 @@ def read_data(index):
     data = pd.read_csv(index, sep=',')
 
     print('File `{}` has been read'.format(csv_file))
-    return data
+    return data.head(20)
 
 
 def cross_validate(df):
@@ -58,21 +58,35 @@ def cross_validate(df):
     for mean, std, params in zip(means, stds, clf.cv_results_['params']):
         print("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params))
     print()
-    print("# Training model on 80 percent of the dataset")
-    clf.fit(X_train, y_train)
-    print("Detailed classification report:")
-    print()
-    print("The model is trained on the full development set.")
-    print("The scores are computed on the full evaluation set.")
-    print()
-    y_true, y_pred = y_test, clf.predict(X_test)
-    print(classification_report(y_true, y_pred))
-    print()
-    print("Confusion Matrix:")
-    print(confusion_matrix(y_true, y_pred))
+
+
+<< << << < HEAD
+print("# Training model on 80 percent of the dataset")
+== == == =
+return clf.best_estimator_, X_train, X_test, y_train, y_test
+
+
+def train_test(clf, X_train, X_test, y_train, y_test):
+    print("# Training model on 60 percent of the dataset")
+
+
+>>>>>> > Added Ham_Spam paper
+clf.fit(X_train, y_train)
+print("Detailed classification report:")
+print()
+print("The model is trained on the full development set.")
+print("The scores are computed on the full evaluation set.")
+print()
+y_true, y_pred = y_test, clf.predict(X_test)
+print(classification_report(y_true, y_pred))
+print()
+print("Confusion Matrix:")
+print(confusion_matrix(y_true, y_pred))
 
 
 if __name__ == "__main__":
     df = read_data(dataset_path / csv_file)
     print("--- Performing Grid Search Cross Validation ---")
-    cross_validate(df)
+    clf, X_train, X_test, y_train, y_test = cross_validate(df)
+    print("--- Training and Evaluating Model using Best Parameters ---")
+    train_test(clf, X_train, X_test, y_train, y_test)
